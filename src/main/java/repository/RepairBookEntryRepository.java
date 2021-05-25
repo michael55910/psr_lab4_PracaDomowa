@@ -3,12 +3,13 @@ package repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import config.Config;
-import model.Car;
 import model.RepairBookEntry;
 import oracle.nosql.driver.NoSQLHandle;
 import oracle.nosql.driver.ops.*;
 import oracle.nosql.driver.values.MapValue;
+import oracle.nosql.driver.values.TimestampValue;
 
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -34,27 +35,9 @@ public class RepairBookEntryRepository {
         tres.waitForCompletion(handle, 60000, 1000);
     }
 
-    /*private void saveRepairBookEntry(RepairBookEntry repairBookEntry) {
-        PutRequest putRequest = null;
-        try {
-            putRequest = new PutRequest().setValueFromJson(objectMapper.writeValueAsString(repairBookEntry), null).setTableName(tableName);
-        } catch (JsonProcessingException e) {
-            System.out.println("JSON processing error");
-            e.printStackTrace();
-        }
-        PutResult putRes = handle.put(putRequest);
-        if (putRes.getVersion() != null) {
-            System.out.println("Successfully added/updated repairBookEntry");
-        } else {
-            System.out.println("Failed to add/update repairBookEntry");
-        }
-    }*/
-
     public RepairBookEntry addEntry() {
         RepairBookEntry repairBookEntry = enterEntryInfo();
-
-        UniversalRepository.save(repairBookEntry, tableName);
-
+        save(repairBookEntry);
         System.out.println(repairBookEntry);
         return repairBookEntry;
     }
@@ -69,27 +52,23 @@ public class RepairBookEntryRepository {
 
     public RepairBookEntry updateById(Long id) {
         RepairBookEntry repairBookEntry = enterEntryInfo();
-
-        MapValue key = new MapValue().put("id", id);
-        GetRequest getRequest = new GetRequest().setKey(key).setTableName(tableName);
-        GetResult getRes = handle.get(getRequest);
-        if (getRes.getValue() != null) {
+        if (repairBookEntry != null) {
             repairBookEntry.setId(id);
-            UniversalRepository.save(repairBookEntry, tableName);
-        } else {
-            System.out.println("Id not found");
         }
-
+        save(repairBookEntry);
         return repairBookEntry;
     }
 
-    public Collection<RepairBookEntry> getByDate(Date date) {
+    public Collection<RepairBookEntry> getByDate() {
+        System.out.print("Podaj datę (dd-MM-yyyy): ");
+        Date date = new Date();
+        try {
+            date = new SimpleDateFormat("dd-MM-yyyy").parse(new Scanner(System.in).next());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
         QueryRequest queryRequest = new QueryRequest().
-                setStatement("SELECT * FROM " + tableName + " WHERE date = \"" + date + "\"");
-
-        /* Queries can return partial results. It is necessary to loop,
-         * reissuing the request until it is "done"
-         */
+                setStatement("SELECT * FROM " + tableName + " WHERE date = \"" + new TimestampValue(new Timestamp(date.getTime())).getString() + "\"");
 
         List<RepairBookEntry> repairBookEntries = new ArrayList<>();
         do {
@@ -103,7 +82,6 @@ public class RepairBookEntryRepository {
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
-                //handle result
             }
         } while (!queryRequest.isDone());
 
@@ -113,40 +91,61 @@ public class RepairBookEntryRepository {
 
     public void MarkAllDone() {
         QueryRequest queryRequest = new QueryRequest().
-                setStatement("SELECT * FROM " + tableName + " WHERE description NOT LIKE \"%DONE%\"");
+                setStatement("SELECT * FROM " + tableName);
 
+        int count = 0;
         do {
             QueryResult queryResult = handle.query(queryRequest);
             List<MapValue> results = queryResult.getResults();
             for (MapValue qval : results) {
-                qval.put("description", qval.getString("description") + " DONE");
-                GetRequest getRequest = new GetRequest().setKey(qval).setTableName(tableName);
-                GetResult getRes = handle.get(getRequest);
-                getRes.getValue();
+                if (!qval.getString("description").contains("DONE")) {
+                    qval.put("description", "DONE: " + qval.getString("description"));
+                    //qval.put("description", "DONE");
+                    PutRequest putRequest = new PutRequest().setValue(qval).setTableName(tableName);
+                    PutResult putRes = handle.put(putRequest);
+                    count++;
+                }
+
             }
         } while (!queryRequest.isDone());
+        System.out.println("Modified " + count + " rows");
     }
 
     private RepairBookEntry enterEntryInfo() {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Car ID: ");
         Long carId = scanner.nextLong();
-        Car car = null;
-        car = new CarRepository().getById(carId);
-        if (car != null) {
-            System.out.println(car);
-        } else {
+        if (new CarRepository().getById(carId) == null) {
             System.out.println("Id not found");
+            return null;
         }
-        System.out.print("Date: ");
-        Date date = null;
+        System.out.print("Date (dd-MM-yyyy): ");
+        Date date = new Date();
         try {
-            date = new SimpleDateFormat("dd-MM-yyyy").parse(scanner.nextLine());
+            date = new SimpleDateFormat("dd-MM-yyy").parse(scanner.next());
         } catch (ParseException e) {
             e.printStackTrace();
         }
         System.out.print("Description: ");
-        String description = scanner.nextLine();
-        return new RepairBookEntry(random.nextLong(), car, date, description);
+        String description = scanner.next();
+        return new RepairBookEntry(Math.abs(random.nextLong()), carId, date, description);
+    }
+
+    private void save(RepairBookEntry repairBookEntry) {
+        if (repairBookEntry != null) {
+            TimestampValue timestampValue = new TimestampValue(new Timestamp(repairBookEntry.getDate().getTime()));
+            MapValue record = new MapValue();
+            record.put("id", repairBookEntry.getId())
+                    .put("carId", repairBookEntry.getCarId())
+                    .put("date", timestampValue)
+                    .put("description", repairBookEntry.getDescription());
+            PutRequest putRequest = new PutRequest().setValue(record).setTableName(tableName);
+            PutResult putRes = handle.put(putRequest);
+            if (putRes.getVersion() != null) {
+                System.out.println("Successfully added/updated");
+            } else {
+                System.out.println("Failed to add/update");
+            }
+        }
     }
 }

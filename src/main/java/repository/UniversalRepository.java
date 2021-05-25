@@ -3,8 +3,6 @@ package repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import config.Config;
-import model.Car;
-import model.RepairBookEntry;
 import oracle.nosql.driver.NoSQLHandle;
 import oracle.nosql.driver.ops.*;
 import oracle.nosql.driver.values.MapValue;
@@ -31,18 +29,11 @@ public class UniversalRepository {
     }
 
     static void deleteById(Long id, String tableName) {
-        /* identify the row to delete */
         MapValue delKey = new MapValue().put("id", id);
-
-        /* construct the DeleteRequest */
         DeleteRequest delRequest = new DeleteRequest().setKey(delKey).setTableName(tableName);
-
-        /* Use the NoSQL handle to execute the delete request */
         DeleteResult del = handle.delete(delRequest);
-
-        /* on success DeleteResult.getSuccess() returns true */
         if (del.getSuccess()) {
-            System.out.println("Successfully removed car");
+            System.out.println("Successfully removed");
         } else {
             System.out.println("Id not found");
         }
@@ -58,7 +49,7 @@ public class UniversalRepository {
 
         MapValue res = getRes.getValue();
         if (res != null) {
-            System.out.println(res);
+            //System.out.println(res);
             try {
                 obj = objectMapper.readValue(res.toJson(), contentClass);
             } catch (JsonProcessingException e) {

@@ -14,7 +14,7 @@ import java.util.Date;
 public class RepairBookEntry {
 
     Long id;
-    Car car;
+    Long carId;
     Date date;
     String description;
 }

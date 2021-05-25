@@ -34,7 +34,7 @@ public class Main {
         while (true) {
             int operation = menu.selectOperation();
             if (operation == 0) {
-                break;
+                return;
             }
             int target = menu.selectTarget();
             switch (operation) {
@@ -65,16 +65,11 @@ public class Main {
                 case 5:
                     Scanner scanner = new Scanner(System.in);
                     switch (target) {
-                        case 1:
+                        case 1 -> {
                             System.out.print("Podaj model: ");
                             carRepository.getByModel(scanner.nextLine());
-                        case 2:
-                            System.out.print("Podaj datę (dd-MM-yyy): ");
-                            try {
-                                repairBookEntryRepository.getByDate(new SimpleDateFormat("dd-MM-yyyy").parse(scanner.nextLine()));
-                            } catch (ParseException e) {
-                                e.printStackTrace();
-                            }
+                        }
+                        case 2 -> repairBookEntryRepository.getByDate();
                     }
                     break;
                 case 6:
