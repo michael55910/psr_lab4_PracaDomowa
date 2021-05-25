@@ -31,7 +31,7 @@ public class CarRepository {
         TableResult tres = handle.tableRequest(treq);
         tres.waitForCompletion(handle, 60000, 1000);
 
-        treq = new TableRequest().setStatement("CREATE INDEX IF NOT EXISTS modelIdx ON + " + tableName + "(model) ");
+        treq = new TableRequest().setStatement("CREATE INDEX IF NOT EXISTS modelIdx ON " + tableName + "(model) ");
         handle.tableRequest(treq);
         tres.waitForCompletion(handle, 60000, 1000);
 

@@ -1,18 +1,15 @@
 package config;
 
-import lombok.SneakyThrows;
 import oracle.nosql.driver.AuthorizationProvider;
 import oracle.nosql.driver.NoSQLHandle;
 import oracle.nosql.driver.NoSQLHandleConfig;
 import oracle.nosql.driver.NoSQLHandleFactory;
-import oracle.nosql.driver.iam.SignatureProvider;
 import oracle.nosql.driver.ops.Request;
 
 public class Config {
 
-    private final static String endpoint = "localhost:5002";
+    private final static String endpoint = "localhost:8080";
 
-    @SneakyThrows
     public static NoSQLHandle getHandle() {
         NoSQLHandleConfig config = new NoSQLHandleConfig(endpoint);
         configureAuth(config);

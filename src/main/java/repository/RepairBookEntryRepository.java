@@ -24,8 +24,7 @@ public class RepairBookEntryRepository {
     public RepairBookEntryRepository() {
 
         final String createTableDDL = "CREATE TABLE IF NOT EXISTS " + tableName +
-                " (id LONG, car Car, date DATE, description STRING, " +
-                "PRIMARY KEY(id))";
+                "(id LONG, carId LONG, date TIMESTAMP(6), description STRING, PRIMARY KEY(id))";
 
         handle = Config.getHandle();
         TableLimits limits = new TableLimits(200, 100, 5);
